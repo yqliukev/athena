@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Athena — Project Research</title>
+  <style>
+    :root {
+      --bg: #0f1114;
+      --surface: #181b20;
+      --surface-2: #1f242b;
+      --border: #2a313c;
+      --text: #e8eaed;
+      --muted: #9aa3af;
+      --accent: #6ea8fe;
+      --accent-dim: #3d5a8a;
+      --ok: #5cb87a;
+      --warn: #d4a24c;
+      --bad: #d46a6a;
+      --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --radius: 8px;
+      --nav-w: 220px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font: 15px/1.55 var(--sans);
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    /* ── Layout ── */
+    .shell {
+      display: grid;
+      grid-template-columns: var(--nav-w) 1fr;
+      min-height: 100vh;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.82rem;
+    }
+    nav h2 {
+      margin: 0 0 0.75rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    nav a {
+      display: block;
+      padding: 0.3rem 0.5rem;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    nav a:hover { color: var(--text); background: var(--surface-2); }
+    nav a.active { color: var(--accent); }
+    nav .sub { padding-left: 0.75rem; font-size: 0.78rem; }
+
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+
+    /* ── Typography ── */
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+    h2 {
+      font-size: 1.15rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 0.95rem; margin: 0 0 0.5rem; }
+    .lead { color: var(--muted); font-size: 1rem; max-width: 62ch; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.8rem;
+    }
+    .meta span {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      color: var(--muted);
+    }
+
+    /* ── Density techniques callout ── */
+    .techniques {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      margin: 1.5rem 0 2rem;
+      font-size: 0.88rem;
+    }
+    .techniques summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .techniques ul {
+      margin: 0.6rem 0 0;
+      padding-left: 1.2rem;
+      color: var(--muted);
+    }
+    .techniques li { margin: 0.25rem 0; }
+    .techniques strong { color: var(--text); }
+
+    /* ── Summary box ── */
+    .summary {
+      background: var(--surface);
+      border: 1px solid var(--accent-dim);
+      border-radius: var(--radius);
+      padding: 1.15rem 1.25rem;
+    }
+    .summary p { margin: 0 0 0.75rem; }
+    .summary p:last-child { margin: 0; }
+    .paths {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    .path {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-size: 0.88rem;
+    }
+    .path strong { display: block; margin-bottom: 0.3rem; font-size: 0.8rem; }
+
+    /* ── Pipeline diagram ── */
+    .pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+    }
+    .pipe-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+    }
+    .pipe-box .label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+    }
+    .pipe-box code { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+    .pipe-arrow {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.2;
+      padding: 0.15rem 0;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      margin: 0.75rem 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    tr:last-child td { border-bottom: none; }
+    td code {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      background: var(--bg);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+    }
+
+    /* ── Tags ── */
+    .tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      margin: 0 0.15rem 0.15rem 0;
+    }
+
+    /* ── Finding cards ── */
+    .finding {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 0.75rem 0;
+      overflow: hidden;
+    }
+    .finding-header {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .finding-header p {
+      margin: 0.35rem 0 0;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .finding-body { padding: 0.75rem 1rem; }
+    .procon {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      font-size: 0.84rem;
+    }
+    .procon h4 {
+      margin: 0 0 0.35rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .procon.plus h4 { color: var(--ok); }
+    .procon.minus h4 { color: var(--bad); }
+    .procon ul { margin: 0; padding-left: 1.1rem; color: var(--muted); }
+    .procon li { margin: 0.2rem 0; }
+    .relevance {
+      margin-top: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      background: var(--surface-2);
+      border-radius: 4px;
+      font-size: 0.84rem;
+      border-left: 2px solid var(--warn);
+    }
+    .relevance strong { color: var(--warn); font-size: 0.72rem; text-transform: uppercase; }
+    details.finding-more {
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    details.finding-more summary {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    details.finding-more summary:hover { color: var(--text); }
+    details.finding-more .inner { padding: 0 1rem 0.75rem; color: var(--muted); }
+    details.finding-more a { color: var(--accent); }
+
+    /* ── Code block ── */
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--muted);
+      margin: 0.75rem 0;
+    }
+    .comment { color: #6b7a8f; }
+    .key { color: #8ab4d4; }
+    .val { color: #a8c97a; }
+
+    /* ── Phase roadmap ── */
+    .phases td:first-child {
+      font-weight: 600;
+      white-space: nowrap;
+      color: var(--accent);
+      font-size: 0.8rem;
+    }
+
+    /* ── Lists ── */
+    .rec-list, .questions {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+    .rec-list li, .questions li {
+      margin: 0.5rem 0;
+      font-size: 0.92rem;
+    }
+    .questions li strong { color: var(--accent); }
+
+    @media (max-width: 800px) {
+      .shell { grid-template-columns: 1fr; }
+      nav {
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      main { padding: 1.25rem; }
+      .paths, .procon { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <nav>
+    <h2>Contents</h2>
+    <a href="#top">Overview</a>
+    <a href="#architecture">Core architecture</a>
+    <a href="#kinds">Value kinds</a>
+    <a href="#connectors">Connectors</a>
+    <a href="#examples">Config examples</a>
+    <a href="#findings">All findings</a>
+    <a class="sub" href="#f-api">APIs over scraping</a>
+    <a class="sub" href="#f-templates">Category templates</a>
+    <a class="sub" href="#f-fetch">Fetch strategy</a>
+    <a class="sub" href="#f-changedetection">changedetection.io</a>
+    <a class="sub" href="#f-glean">jaypetez/glean</a>
+    <a class="sub" href="#f-rssbridge">RSS-Bridge</a>
+    <a class="sub" href="#f-extract">Extraction stack</a>
+    <a class="sub" href="#f-yaml">YAML configs</a>
+    <a class="sub" href="#f-storage">Storage</a>
+    <a class="sub" href="#f-schedule">Scheduling</a>
+    <a class="sub" href="#f-dashboard">Dashboard</a>
+    <a class="sub" href="#f-compliance">Compliance</a>
+    <a href="#phases">Phased scope</a>
+    <a href="#recs">Recommendations</a>
+    <a href="#open">Open questions</a>
+  </nav>
+
+  <main id="top">
+    <h1>Athena — Project Research</h1>
+    <p class="lead">Personal pipeline for <strong>current structured facts</strong> — stock open, today's weather, esports match times — from sites/APIs on demand or on a schedule, with a path to auto-onboard sources and an information dashboard.</p>
+
+    <div class="meta">
+      <span>Researched 2026-07-01</span>
+      <span>Updated 2026-06-29</span>
+      <span>7 research questions</span>
+    </div>
+
+    <details class="techniques" open>
+      <summary>Density &amp; readability techniques used in this doc</summary>
+      <ul>
+        <li><strong>Sticky TOC</strong> — jump navigation; long docs need wayfinding, not shorter text.</li>
+        <li><strong>Lead sentence + table</strong> — comparative facts in tables; prose only for judgment calls.</li>
+        <li><strong>Pro/con grids</strong> — tradeoffs side-by-side instead of interleaved bullets.</li>
+        <li><strong>Layered disclosure</strong> — <code>&lt;details&gt;</code> hides links and secondary detail until expanded.</li>
+        <li><strong>Taxonomy tags</strong> — <code>scalar</code>, <code>api_json</code> scannable at a glance.</li>
+        <li><strong>Visual pipeline</strong> — diagram replaces ASCII for the core mental model.</li>
+        <li><strong>Relevance callouts</strong> — every finding ends with "so what for Athena."</li>
+        <li><strong>Phase matrix</strong> — roadmap as rows, not narrative paragraphs.</li>
+      </ul>
+    </details>
+
+    <section class="summary">
+      <h2 style="margin-top:0;border:0;padding:0;font-size:1rem;">Executive summary</h2>
+      <p>Scope Athena as a <strong>layered ingestion pipeline</strong>, not a pure scraper. Prefer <strong>APIs and direct connectors</strong> for structured facts; use HTML heuristics when no API exists; escalate to browser/LLM only for exceptions. RSS is optional — useful when a feed already exists.</p>
+      <p><strong>Heterogeneous data rule:</strong> unify the <em>output contract</em> (<code>DataPoint</code>), not extraction logic. Each source declares a <em>kind</em> + <em>connector</em>.</p>
+      <p><strong>Recommended:</strong> thin custom core (registry, scheduler, SQLite) + reusable connector handlers. Defer Celery/Temporal until ~50 sources.</p>
+      <div class="paths">
+        <div class="path">
+          <strong>Path A — Adopt + customize</strong>
+          Spike changedetection.io or jaypetez/glean. Fastest time-to-value; less dashboard control.
+        </div>
+        <div class="path">
+          <strong>Path B — Build lean custom</strong>
+          Python worker + SQLite + Next.js dashboard + YAML configs. Full control; more upfront work.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CORE ARCHITECTURE (expanded) ── -->
+    <h2 id="architecture">Core architecture — adapter pattern</h2>
+    <p class="lead">Sites differ at fetch/extract time but converge on a small set of value shapes. One interface: <code>fetch → extract → normalize → DataPoint[]</code>.</p>
+
+    <div class="pipeline">
+      <div class="pipe-box">
+        <div class="label">Layer 1 — Source config (per site)</div>
+        <code>kind</code> stock_quote · weather · schedule · text · custom<br>
+        <code>connector</code> api_json · html_selector · ical · rss · browser<br>
+        <code>extract</code> jsonpath / css / ical parser / schema
+      </div>
+      <div class="pipe-arrow">▼</div>
+      <div class="pipe-box">
+        <div class="label">Layer 2 — Connector runtime (~6 handlers)</div>
+        Reusable handlers; no per-site Python code
+      </div>
+      <div class="pipe-arrow">▼</div>
+      <div class="pipe-box">
+        <div class="label">Layer 3 — Normalized DataPoint (all sources)</div>
+        <code>{ source_id, kind, label, value, unit, as_of, meta }</code>
+      </div>
+    </div>
+
+    <h3 id="kinds">Value kinds → dashboard widgets</h3>
+    <table>
+      <thead><tr><th>Kind</th><th>Example</th><th>Widget</th></tr></thead>
+      <tbody>
+        <tr><td><code>scalar</code></td><td>AAPL open $212.40</td><td>Stat card</td></tr>
+        <tr><td><code>timeseries</code></td><td>Hourly temps, intraday prices</td><td>Sparkline / chart</td></tr>
+        <tr><td><code>forecast</code></td><td>High 82°F, rain 30%</td><td>Weather card</td></tr>
+        <tr><td><code>schedule</code></td><td>Team A vs B @ 7pm</td><td>Calendar / list</td></tr>
+        <tr><td><code>text</code></td><td>Patch notes, headline</td><td>Text block</td></tr>
+        <tr><td><code>table</code></td><td>Standings rows</td><td>Sortable table</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="connectors">Connectors — how to fetch raw data</h3>
+    <table>
+      <thead><tr><th>Connector</th><th>Use when</th><th>Config keys</th></tr></thead>
+      <tbody>
+        <tr><td><code>api_json</code></td><td>JSON API (Alpha Vantage, Open-Meteo)</td><td>url, jsonpath, headers</td></tr>
+        <tr><td><code>html_selector</code></td><td>Static page, known DOM</td><td>url, selector, attr, transform</td></tr>
+        <tr><td><code>html_table</code></td><td>Standings, price tables</td><td>url, table_selector, column_map</td></tr>
+        <tr><td><code>ical</code></td><td>Calendar / esports <code>.ics</code></td><td>url → parse VEVENT</td></tr>
+        <tr><td><code>rss</code></td><td>Feed already exists</td><td>url → map item fields</td></tr>
+        <tr><td><code>browser</code></td><td>JS SPA (last resort)</td><td>Playwright + selectors</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="examples">Example configs — same framework, three domains</h3>
+    <pre><span class="comment"># Stock — API, not Yahoo HTML</span>
+<span class="key">id:</span> aapl-open  <span class="key">kind:</span> <span class="val">scalar</span>  <span class="key">connector:</span> <span class="val">api_json</span>
+<span class="key">fetch:</span>  url: "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${AV_KEY}"
+<span class="key">extract:</span> path: "$.Global Quote.05. open"  <span class="key">transform:</span> [{ op: float }]
+<span class="key">normalize:</span> label: "AAPL open"  unit: USD
+<span class="key">schedule:</span> "0 9 * * 1-5"
+
+<span class="comment"># Weather — Open-Meteo (free, no key)</span>
+<span class="key">id:</span> nyc-today  <span class="key">kind:</span> <span class="val">forecast</span>  <span class="key">connector:</span> <span class="val">api_json</span>
+<span class="key">fetch:</span>  url: "https://api.open-meteo.com/v1/forecast?latitude=40.71&longitude=-74.01&daily=..."
+<span class="key">extract:</span> map: { high: "$.temperature_2m_max[0]", rain_pct: "$.precipitation_probability_max[0]" }
+<span class="key">schedule:</span> "0 6 * * *"
+
+<span class="comment"># Esports — iCal first</span>
+<span class="key">id:</span> lol-schedule  <span class="key">kind:</span> <span class="val">schedule</span>  <span class="key">connector:</span> <span class="val">ical</span>
+<span class="key">fetch:</span>  url: "https://example.com/schedule.ics"
+<span class="key">extract:</span> fields: [summary, dtstart, location, description]
+<span class="key">schedule:</span> "0 */4 * * *"</pre>
+
+  <!-- ── FINDINGS (compact cards) ── -->
+    <h2 id="findings">Findings</h2>
+
+    <article class="finding" id="f-adapter">
+      <div class="finding-header">
+        <h3>Unified framework — adapter + DataPoint envelope</h3>
+        <p>Core answer: unify envelope and connector interface; specialize only in reusable handlers and category templates.</p>
+        <span class="tag">adapter</span><span class="tag">DataPoint</span><span class="tag">config-driven</span>
+      </div>
+      <div class="finding-body">
+        <div class="procon">
+          <div class="plus">
+            <h4>+ Advantages</h4>
+            <ul>
+              <li>Add site = add config, not code</li>
+              <li>Dashboard renders by <code>kind</code></li>
+              <li>APIs more stable than finance HTML</li>
+              <li>Manual + cron share same path</li>
+            </ul>
+          </div>
+          <div class="minus">
+            <h4>− Disadvantages</h4>
+            <ul>
+              <li>~6 connector types to design upfront</li>
+              <li>Edge cases need <code>custom</code> or LLM</li>
+              <li>API keys &amp; rate limits per category</li>
+            </ul>
+          </div>
+        </div>
+        <div class="relevance"><strong>Relevance</strong> — Foundation for all disparate sites. Many websites → few connectors → few kinds → one dashboard.</div>
+      </div>
+      <details class="finding-more"><summary>Links</summary><div class="inner">
+        <a href="http://scrapit.space/docs.html">Scrapit YAML model</a> ·
+        <a href="https://open-meteo.com/">Open-Meteo</a> ·
+        <a href="https://www.alphavantage.co/">Alpha Vantage</a>
+      </div></details>
+    </article>
+
+    <article class="finding" id="f-api">
+      <div class="finding-header">
+        <h3>Prefer APIs over scraping for structured facts</h3>
+        <p>Prices, temperature, indices — public APIs beat brittle CSS on finance/weather UIs.</p>
+        <span class="tag">api_json</span><span class="tag">stocks</span><span class="tag">weather</span>
+      </div>
+      <div class="finding-body">
+        <div class="procon">
+          <div class="plus"><h4>+ Advantages</h4><ul><li>Stable JSON schemas</li><li>Built-in units &amp; timestamps</li><li>Clearer ToS than scraping</li></ul></div>
+          <div class="minus"><h4>− Disadvantages</h4><ul><li>Rate limits (AV free: 25 req/day)</li><li>Niche esports lack APIs</li><li>Vendor dependency</li></ul></div>
+        </div>
+        <div class="relevance"><strong>Relevance</strong> — Registry field <code>origin: api | scrape</code>. Wizards: stock → ticker+API; weather → lat/lon+Open-Meteo; esports → iCal/API → table scrape.</div>
+      </div>
+      <details class="finding-more"><summary>Links</summary><div class="inner">
+        <a href="https://www.alphavantage.co/">Alpha Vantage</a> ·
+        <a href="https://open-meteo.com/">Open-Meteo</a> ·
+        <a href="https://esport.is/api-docs">esport.is API</a>
+      </div></details>
+    </article>
+
+    <article class="finding" id="f-templates">
+      <div class="finding-header">
+        <h3>Category templates for onboarding</h3>
+        <p>Classify user intent first, then pre-fill connector + extract + widget — automate within a category, not across all web pages.</p>
+      </div>
+      <div class="finding-body">
+        <table>
+          <thead><tr><th>User intent</th><th>Template fills</th><th>User provides</th></tr></thead>
+          <tbody>
+            <tr><td>Stock price</td><td><code>api_json</code> + AV paths</td><td>Ticker, field (open/close)</td></tr>
+            <tr><td>Weather</td><td><code>api_json</code> + Open-Meteo</td><td>Location or lat/lon</td></tr>
+            <tr><td>Esports schedule</td><td>ical → api → html_table</td><td>League URL or team</td></tr>
+            <tr><td>Generic value</td><td><code>html_selector</code></td><td>URL + element picker</td></tr>
+            <tr><td>Page change</td><td>diff monitor</td><td>URL + optional selector</td></tr>
+          </tbody>
+        </table>
+        <div class="relevance"><strong>Relevance</strong> — ~5 onboarding flows instead of infinite one-offs. Phase 4 automation scoped per template.</div>
+      </div>
+    </article>
+
+    <article class="finding" id="f-fetch">
+      <div class="finding-header">
+        <h3>Per-source fetch: API &amp; direct extraction first</h3>
+        <p>Declare how to reach data directly — not RSS-first discovery. RSS/sitemaps only when already available.</p>
+      </div>
+      <div class="finding-body">
+        <div class="procon">
+          <div class="plus"><h4>+ Advantages</h4><ul><li>Matches stocks/weather/esports reality</li><li>Fewer parts than RSS-first</li><li>Clean connector / store / UI split</li></ul></div>
+          <div class="minus"><h4>− Disadvantages</h4><ul><li>Per-source config when no API</li><li>Selectors break on redesign</li><li>JS pages need browser</li></ul></div>
+        </div>
+        <div class="relevance"><strong>Relevance</strong> — Registry: <code>connector: api_json | html_selector | ical | rss | browser</code> based on what the site offers.</div>
+      </div>
+    </article>
+
+    <article class="finding" id="f-changedetection">
+      <div class="finding-header">
+        <h3>changedetection.io — change monitoring (~32k ★)</h3>
+        <p>CSS/XPath/JSONPath, Playwright, 85+ notification channels, visual selector UI.</p>
+        <span class="tag">adopt-candidate</span><span class="tag">phase-0 spike</span>
+      </div>
+      <div class="finding-body">
+        <div class="procon">
+          <div class="plus"><h4>+ Advantages</h4><ul><li>"When X changes" use cases</li><li>Visual selector UI</li><li>REST API + Chrome extension</li><li>Historical diffs</li></ul></div>
+          <div class="minus"><h4>− Disadvantages</h4><ul><li>Not structured cross-site analytics</li><li>Monitoring-centric dashboard</li><li>Custom dashboard needs webhooks</li></ul></div>
+        </div>
+        <div class="relevance"><strong>Relevance</strong> — Phase-1 shortcut for change alerts. Run alongside Athena core; push webhooks into store.</div>
+      </div>
+      <details class="finding-more"><summary>Links</summary><div class="inner"><a href="https://github.com/dgtlmoon/changedetection.io">GitHub</a></div></details>
+    </article>
+
+    <article class="finding" id="f-glean">
+      <div class="finding-header">
+        <h3>jaypetez/glean — pluggable signal aggregator (~4 ★)</h3>
+        <p>YAML sources → optional LLM → scheduled sinks incl. SQLite dashboard. Plugin architecture.</p>
+        <span class="tag">adopt-candidate</span><span class="tag">name-collision</span>
+      </div>
+      <div class="finding-body">
+        <div class="procon">
+          <div class="plus"><h4>+ Advantages</h4><ul><li>Closest OSS vision match</li><li>YAML + web UI + run-now</li><li>Plugin boundaries for automation</li><li>Webhook/file export</li></ul></div>
+          <div class="minus"><h4>− Disadvantages</h4><ul><li>Tiny community</li><li>Digest-oriented dashboard</li><li>≠ LeslieLeung/glean (PKM)</li></ul></div>
+        </div>
+        <div class="relevance"><strong>Relevance</strong> — Docker spike before greenfield. Borrow YAML schema + plugin boundaries if not adopting.</div>
+      </div>
+      <details class="finding-more"><summary>Links</summary><div class="inner"><a href="https://github.com/jaypetez/glean">GitHub</a></div></details>
+    </article>
+
+    <article class="finding" id="f-rssbridge">
+      <div class="finding-header">
+        <h3>RSS-Bridge — optional feed generation</h3>
+        <p>CSS selectors → Atom/RSS via web form. Convenience layer, not core architecture.</p>
+        <span class="tag">optional</span><span class="tag">v2+</span>
+      </div>
+      <div class="finding-body">
+        <p style="margin:0 0 0.5rem;font-size:0.88rem;color:var(--muted)"><strong>Use:</strong> news-style item streams. <strong>Skip:</strong> scalar facts (stock quote, weather) — configure connector directly.</p>
+        <div class="relevance"><strong>Relevance</strong> — Borrow visual selector picker idea for Athena's add-source form; skip separate PHP service if possible.</div>
+      </div>
+      <details class="finding-more"><summary>Links</summary><div class="inner"><a href="https://github.com/RSS-Bridge/rss-bridge">GitHub</a></div></details>
+    </article>
+
+    <article class="finding" id="f-extract">
+      <div class="finding-header">
+        <h3>Extraction stack — trafilatura + Playwright + LLM</h3>
+        <p>Heuristics for articles; Playwright when static fetch empty; LLM for enrichment or irregular layouts only.</p>
+      </div>
+      <div class="finding-body">
+        <div class="procon">
+          <div class="plus"><h4>+ Advantages</h4><ul><li>trafilatura for article bodies</li><li>Playwright only on failure</li><li>LLM on new items only</li></ul></div>
+          <div class="minus"><h4>− Disadvantages</h4><ul><li>Fails on tables/dashboards</li><li>Playwright ~300MB+</li><li>LLM needs validation</li></ul></div>
+        </div>
+        <div class="relevance"><strong>Relevance</strong> — <code>fetch: httpx | playwright</code>, <code>extract: trafilatura | css | llm_schema</code>. Start httpx only.</div>
+      </div>
+    </article>
+
+    <article class="finding" id="f-yaml">
+      <div class="finding-header">
+        <h3>Declarative YAML configs (Scrapit pattern)</h3>
+        <p>URL, backend, selectors, transforms, validation — one file per target; UI writes same schema later.</p>
+      </div>
+      <div class="finding-body">
+        <div class="relevance"><strong>Relevance</strong> — Model for source registry. Version configs; audit selector changes.</div>
+      </div>
+      <details class="finding-more"><summary>Links</summary><div class="inner"><a href="http://scrapit.space/docs.html">Scrapit docs</a></div></details>
+    </article>
+
+    <article class="finding" id="f-storage">
+      <div class="finding-header">
+        <h3>Storage — SQLite first</h3>
+        <p>One file, zero ops. Tables: <code>sources</code>, <code>fetch_runs</code>, <code>items</code>, optional <code>snapshots</code>. Postgres when multi-user or concurrent workers.</p>
+      </div>
+      <div class="finding-body">
+        <div class="relevance"><strong>Relevance</strong> — Store extracted values + hashes, not raw HTML blobs. DuckDB/Postgres only at scale.</div>
+      </div>
+    </article>
+
+    <article class="finding" id="f-schedule">
+      <div class="finding-header">
+        <h3>Scheduling — cron / APScheduler for v1</h3>
+        <p>Daily personal use doesn't need Celery/Temporal. Isolate failures per source (try/except). Queue at ~50 sources.</p>
+      </div>
+      <div class="finding-body">
+        <div class="relevance"><strong>Relevance</strong> — <code>0 6 * * *</code> daily + <code>athena fetch --source X</code>. Same entrypoint for manual runs.</div>
+      </div>
+    </article>
+
+    <article class="finding" id="f-dashboard">
+      <div class="finding-header">
+        <h3>Dashboard — DataPoints by kind, not feed reader</h3>
+        <p>Scalar cards, forecast, schedule lists, charts. Borrow Hati layout patterns; don't mimic RSS UX.</p>
+      </div>
+      <div class="finding-body">
+        <div class="relevance"><strong>Relevance</strong> — MVP: source health table + widgets by <code>kind</code> + search. Phase 2: configurable layout.</div>
+      </div>
+      <details class="finding-more"><summary>Links</summary><div class="inner"><a href="https://github.com/prathamdupare/hati">Hati</a></div></details>
+    </article>
+
+    <article class="finding" id="f-compliance">
+      <div class="finding-header">
+        <h3>Compliance — robots.txt, rate limits</h3>
+        <p>Honor robots.txt, 1–5s delays, descriptive User-Agent, no login walls, minimize PII. Not legal advice.</p>
+      </div>
+      <div class="finding-body">
+        <div class="relevance"><strong>Relevance</strong> — Fetch layer checks robots.txt; per-domain delay; <code>robots_checked_at</code> on source. Login-required = out of scope v1.</div>
+      </div>
+    </article>
+
+    <!-- ── PHASES ── -->
+    <h2 id="phases">Phased scope</h2>
+    <table class="phases">
+      <thead><tr><th>Phase</th><th>Scope</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>0 — Spike</td><td>changedetection.io or jaypetez/glean, 3–5 URLs</td><td>Adopt vs build decision</td></tr>
+        <tr><td>1 — Core</td><td>Registry, api_json + html_selector + ical, SQLite, cron + CLI</td><td>Data accumulating daily</td></tr>
+        <tr><td>2 — Onboard</td><td>Paste URL + pick element / YAML</td><td>Add sites without code</td></tr>
+        <tr><td>3 — Dashboard</td><td>Source health, history, widgets by kind, search</td><td>Information dashboard v1</td></tr>
+        <tr><td>4 — Smart add</td><td>LLM selector suggest → confirm; optional RSS-Bridge</td><td>Faster expansion</td></tr>
+        <tr><td>5 — Scale</td><td>Playwright fallback, Celery, Postgres, notifications</td><td>50+ sources</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="recs">Recommendations</h2>
+    <ol class="rec-list">
+      <li><strong>Spike first.</strong> Docker-run changedetection.io + jaypetez/glean with 5 real URLs. If 80% fit, extend; else build custom.</li>
+      <li><strong>Phase 1 only if building.</strong> Python + SQLite + <code>api_json</code>, <code>html_selector</code>, <code>ical</code> + <code>athena fetch --source X</code>. Add <code>rss</code> only when feed URL known.</li>
+      <li><strong>Registry schema now.</strong> Fields: url, connector, schedule, extract, normalize, tags, enabled, last_status. Phase 4 UI writes rows — no pipeline rewrites.</li>
+    </ol>
+
+    <h2 id="open">Open questions</h2>
+    <ul class="questions">
+      <li><strong>Categories first?</strong> Stocks + weather (API-heavy) vs esports (more scraping) — pick 2 for v1.</li>
+      <li><strong>Historical depth?</strong> Current value only vs time-series (30-day AAPL chart) — schema impact.</li>
+      <li><strong>Change vs snapshot?</strong> Alert on change, or always show latest?</li>
+      <li><strong>Manual add UX?</strong> Web form, YAML, CLI, or browser extension?</li>
+      <li><strong>Hosting?</strong> Local Mac, home server, or VPS — affects Playwright + cron.</li>
+      <li><strong>LLM enrichment?</strong> Summaries/tags — API keys + cost.</li>
+      <li><strong>Multi-user?</strong> Personal only vs shared dashboard — auth + Postgres.</li>
+      <li><strong>Adopt threshold?</strong> What is "good enough" after spike?</li>
+    </ul>
+
+    <p style="margin-top:2.5rem;font-size:0.8rem;color:var(--muted)">Source: <code>.cursor/research.md</code> · Generated for Athena project scoping</p>
+  </main>
+</div>
+</body>
+</html>

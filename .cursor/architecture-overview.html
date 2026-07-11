@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Athena — Architecture Overview</title>
+  <style>
+    :root {
+      --bg: #0f1114;
+      --surface: #181b20;
+      --surface-2: #1f242b;
+      --border: #2a313c;
+      --text: #e8eaed;
+      --muted: #9aa3af;
+      --accent: #6ea8fe;
+      --accent-dim: #3d5a8a;
+      --agent: #b794f6;
+      --agent-dim: #6b4f9a;
+      --ingest: #5cb87a;
+      --ingest-dim: #2d6b42;
+      --ok: #5cb87a;
+      --warn: #d4a24c;
+      --bad: #d46a6a;
+      --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --radius: 8px;
+      --nav-w: 240px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font: 15px/1.55 var(--sans);
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: var(--nav-w) 1fr;
+      min-height: 100vh;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.82rem;
+    }
+    nav h2 {
+      margin: 0 0 0.75rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    nav a {
+      display: block;
+      padding: 0.3rem 0.5rem;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    nav a:hover { color: var(--text); background: var(--surface-2); }
+    nav .sub { padding-left: 0.75rem; font-size: 0.78rem; }
+
+    main {
+      max-width: 960px;
+      padding: 2rem 2.5rem 4rem;
+    }
+
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+    h2 {
+      font-size: 1.15rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 0.95rem; margin: 1.25rem 0 0.5rem; }
+    .lead { color: var(--muted); font-size: 1rem; max-width: 68ch; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.8rem;
+    }
+    .meta span {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      color: var(--muted);
+    }
+
+    .summary {
+      background: var(--surface);
+      border: 1px solid var(--accent-dim);
+      border-radius: var(--radius);
+      padding: 1.15rem 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .summary p { margin: 0 0 0.75rem; }
+    .summary p:last-child { margin: 0; }
+
+    .callout {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--warn);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    .callout.agent { border-left-color: var(--agent); }
+    .callout.ingest { border-left-color: var(--ingest); }
+    .callout strong { display: block; margin-bottom: 0.35rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .callout.agent strong { color: var(--agent); }
+    .callout.ingest strong { color: var(--ingest); }
+    .callout.warn strong { color: var(--warn); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      margin: 0.75rem 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    tr:last-child td { border-bottom: none; }
+    td code {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      background: var(--bg);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      margin: 0 0.15rem 0.15rem 0;
+    }
+    .tag.ingest { color: var(--ingest); border-color: var(--ingest-dim); }
+    .tag.agent { color: var(--agent); border-color: var(--agent-dim); }
+
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--muted);
+      margin: 0.75rem 0;
+    }
+    .comment { color: #6b7a8f; }
+    .key { color: #8ab4d4; }
+    .val { color: #a8c97a; }
+
+    .phases td:first-child {
+      font-weight: 600;
+      white-space: nowrap;
+      color: var(--accent);
+      font-size: 0.8rem;
+    }
+
+    .rec-list, .questions {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+    .rec-list li, .questions li {
+      margin: 0.5rem 0;
+      font-size: 0.92rem;
+    }
+
+    /* ── Architecture diagram ── */
+    .diagram-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin: 1.25rem 0;
+      overflow-x: auto;
+    }
+    .diagram-wrap figcaption {
+      margin-top: 0.85rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .arch-svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+    }
+    .pipe-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+    }
+    .pipe-box .label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+    .pipe-box.ingest .label { color: var(--ingest); }
+    .pipe-box.agent .label { color: var(--agent); }
+    .pipe-box.store .label { color: var(--accent); }
+    .pipe-box code { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+    .pipe-arrow {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.2;
+      padding: 0.15rem 0;
+    }
+
+    .procon {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      font-size: 0.84rem;
+      margin: 0.75rem 0;
+    }
+    .procon h4 {
+      margin: 0 0 0.35rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .procon.plus h4 { color: var(--ok); }
+    .procon.minus h4 { color: var(--bad); }
+    .procon ul { margin: 0; padding-left: 1.1rem; color: var(--muted); }
+    .procon li { margin: 0.2rem 0; }
+
+    .context-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+    }
+    .context-card h3 { margin-top: 0; }
+
+    @media (max-width: 800px) {
+      .shell { grid-template-columns: 1fr; }
+      nav {
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      main { padding: 1.25rem; }
+      .procon { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <nav>
+    <h2>Contents</h2>
+    <a href="#top">Overview</a>
+    <a href="#context">Conversation context</a>
+    <a href="#decision">Key decision</a>
+    <a href="#diagram">Architecture diagram</a>
+    <a href="#components">Components</a>
+    <a class="sub" href="#ingestion">Ingestion layer</a>
+    <a class="sub" href="#storage">Storage layer</a>
+    <a class="sub" href="#agent">Agent layer</a>
+    <a class="sub" href="#dashboard">Dashboard</a>
+    <a href="#flow">Data flow</a>
+    <a href="#compare">Agent vs pipeline</a>
+    <a href="#stack">Recommended stack</a>
+    <a href="#phases">Build phases</a>
+    <a href="#next">Next steps</a>
+  </nav>
+
+  <main id="top">
+    <h1>Athena — Architecture Overview</h1>
+    <p class="lead">Documentation of the initial architecture conversation: a personal dashboard for <strong>task prioritization and daily planning</strong>, with a deterministic ingestion pipeline feeding an AI planning agent.</p>
+
+    <div class="meta">
+      <span>Documented 2026-07-11</span>
+      <span>Conversation summary</span>
+      <span>2–3 sources · few-minute polling</span>
+      <span>Companion to <code>ingestion-research.html</code></span>
+    </div>
+
+    <section class="summary">
+      <h2 style="margin-top:0;border:0;padding:0;font-size:1rem;">Executive summary</h2>
+      <p>Athena is a personal system that collects structured facts from a small set of sources (calendar, tasks, etc.), stores them reliably, and uses an AI agent to help prioritize work and plan each day.</p>
+      <p><strong>Core insight:</strong> ingestion and reasoning are separate concerns. A scheduled, deterministic worker fetches and normalizes data into SQLite. The agent reads that store — it does not poll external APIs on every request.</p>
+      <p><strong>At personal scale (2–3 sources, polling every few minutes):</strong> Python worker + SQLite + APScheduler + YAML source configs. No Celery, no Playwright, no LLM in the fetch path.</p>
+    </section>
+
+    <!-- ── CONTEXT ── -->
+    <h2 id="context">Conversation context</h2>
+
+    <div class="context-card">
+      <h3>Starting goal</h3>
+      <p style="margin:0;color:var(--muted)">Build a dashboard that helps prioritize tasks and plan each day. The project may use AI agents, but this is a first agentic system — so the right foundation matters.</p>
+    </div>
+
+    <div class="context-card">
+      <h3>Initial assumption (revised)</h3>
+      <p style="margin:0 0 0.5rem;color:var(--muted)">An agent might handle information ingestion — fetching from calendar, task managers, and other sources.</p>
+      <p style="margin:0;color:var(--muted)">Prior research in <code>ingestion-research.html</code> argued against this: ingestion should be a <em>layered pipeline</em> with config-driven connectors, not an agent loop. This conversation confirmed that recommendation for a planning dashboard at small scale.</p>
+    </div>
+
+    <div class="context-card">
+      <h3>Scale constraints</h3>
+      <p style="margin:0;color:var(--muted)">~2–3 external sources, refreshed at most every few minutes. Personal, single-user. APIs preferred over scraping where available.</p>
+    </div>
+
+    <!-- ── KEY DECISION ── -->
+    <h2 id="decision">Key decision: agent as planner, not fetcher</h2>
+
+    <div class="callout ingest">
+      <strong>Ingestion layer — deterministic</strong>
+      Scheduled worker polls APIs on a cron. Fetch → extract → normalize → upsert into SQLite. No LLM. Failures isolated per source. Same code path for manual <code>athena fetch</code> and scheduled runs.
+    </div>
+
+    <div class="callout agent">
+      <strong>Agent layer — reasoning</strong>
+      Reads normalized tasks, events, and user goals from SQLite. Produces a ranked daily plan. Runs on demand (user opens dashboard, clicks "reprioritize") — not on every poll cycle.
+    </div>
+
+    <div class="callout warn">
+      <strong>Why not agent-driven ingestion?</strong>
+      Unpredictable latency, token cost on every poll, hard-to-test behavior, and opaque failures. Structured API responses don't need interpretation — they need reliable extraction and storage.
+    </div>
+
+    <!-- ── ARCHITECTURE DIAGRAM ── -->
+    <h2 id="diagram">Architecture diagram</h2>
+    <p class="lead">How the major components connect. Green = deterministic ingestion. Purple = AI reasoning. Blue = shared storage and UI.</p>
+
+    <figure class="diagram-wrap">
+      <svg class="arch-svg" viewBox="0 0 880 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Athena system architecture diagram">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#9aa3af"/>
+          </marker>
+          <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#5cb87a"/>
+          </marker>
+          <marker id="arrow-purple" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#b794f6"/>
+          </marker>
+          <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#6ea8fe"/>
+          </marker>
+        </defs>
+
+        <!-- Background zones -->
+        <rect x="20" y="20" width="840" height="175" rx="10" fill="#1a2e22" stroke="#2d6b42" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="36" y="44" fill="#5cb87a" font-size="11" font-family="system-ui,sans-serif" font-weight="600" letter-spacing="0.08em">INGESTION LAYER — no LLM</text>
+
+        <rect x="20" y="210" width="400" height="290" rx="10" fill="#1a1e28" stroke="#3d5a8a" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="36" y="234" fill="#6ea8fe" font-size="11" font-family="system-ui,sans-serif" font-weight="600" letter-spacing="0.08em">STORAGE LAYER</text>
+
+        <rect x="440" y="210" width="420" height="290" rx="10" fill="#221a2e" stroke="#6b4f9a" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="456" y="234" fill="#b794f6" font-size="11" font-family="system-ui,sans-serif" font-weight="600" letter-spacing="0.08em">AGENT + DASHBOARD LAYER</text>
+
+        <!-- External sources -->
+        <rect x="40" y="70" width="120" height="52" rx="6" fill="#1f242b" stroke="#2a313c"/>
+        <text x="100" y="93" fill="#e8eaed" font-size="12" font-family="system-ui,sans-serif" text-anchor="middle" font-weight="600">Calendar API</text>
+        <text x="100" y="110" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">Google / iCal</text>
+
+        <rect x="190" y="70" width="120" height="52" rx="6" fill="#1f242b" stroke="#2a313c"/>
+        <text x="250" y="93" fill="#e8eaed" font-size="12" font-family="system-ui,sans-serif" text-anchor="middle" font-weight="600">Task API</text>
+        <text x="250" y="110" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">Todoist / Linear</text>
+
+        <rect x="340" y="70" width="120" height="52" rx="6" fill="#1f242b" stroke="#2a313c"/>
+        <text x="400" y="93" fill="#e8eaed" font-size="12" font-family="system-ui,sans-serif" text-anchor="middle" font-weight="600">Source 3</text>
+        <text x="400" y="110" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">api_json / ical</text>
+
+        <!-- Scheduler -->
+        <rect x="500" y="70" width="140" height="52" rx="6" fill="#1f242b" stroke="#5cb87a" stroke-width="1.5"/>
+        <text x="570" y="93" fill="#5cb87a" font-size="12" font-family="system-ui,sans-serif" text-anchor="middle" font-weight="600">Scheduler</text>
+        <text x="570" y="110" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">APScheduler / cron</text>
+
+        <!-- Worker -->
+        <rect x="680" y="70" width="160" height="52" rx="6" fill="#1f242b" stroke="#5cb87a" stroke-width="1.5"/>
+        <text x="760" y="93" fill="#5cb87a" font-size="12" font-family="system-ui,sans-serif" text-anchor="middle" font-weight="600">Ingestion Worker</text>
+        <text x="760" y="110" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">fetch → extract → norm</text>
+
+        <!-- Arrows: sources to worker -->
+        <line x1="100" y1="122" x2="100" y2="145" stroke="#5cb87a" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+        <line x1="250" y1="122" x2="250" y2="145" stroke="#5cb87a" stroke-width="1.5"/>
+        <line x1="400" y1="122" x2="400" y2="145" stroke="#5cb87a" stroke-width="1.5"/>
+        <line x1="100" y1="145" x2="400" y2="145" stroke="#5cb87a" stroke-width="1.5"/>
+        <line x1="400" y1="145" x2="760" y2="145" stroke="#5cb87a" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+        <line x1="570" y1="122" x2="680" y2="96" stroke="#5cb87a" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+        <!-- Registry -->
+        <rect x="500" y="140" width="140" height="40" rx="6" fill="#181b20" stroke="#2a313c"/>
+        <text x="570" y="165" fill="#9aa3af" font-size="11" font-family="monospace" text-anchor="middle">source registry (YAML)</text>
+
+        <!-- Connectors -->
+        <rect x="40" y="140" width="420" height="40" rx="6" fill="#181b20" stroke="#2a313c"/>
+        <text x="250" y="165" fill="#9aa3af" font-size="11" font-family="monospace" text-anchor="middle">connectors: api_json · ical · html_selector</text>
+
+        <!-- Arrow worker to SQLite -->
+        <line x1="760" y1="122" x2="760" y2="195" stroke="#5cb87a" stroke-width="2" marker-end="url(#arrow-green)"/>
+        <text x="775" y="165" fill="#5cb87a" font-size="10" font-family="monospace">upsert</text>
+
+        <!-- SQLite -->
+        <rect x="40" y="255" width="340" height="100" rx="8" fill="#1f242b" stroke="#6ea8fe" stroke-width="2"/>
+        <text x="210" y="282" fill="#6ea8fe" font-size="14" font-family="system-ui,sans-serif" text-anchor="middle" font-weight="700">SQLite</text>
+        <text x="60" y="308" fill="#9aa3af" font-size="11" font-family="monospace">sources · items · fetch_runs</text>
+        <text x="60" y="326" fill="#9aa3af" font-size="11" font-family="monospace">sync_state · daily_plans · user_goals</text>
+        <text x="60" y="344" fill="#9aa3af" font-size="11" font-family="monospace">DataPoint / TaskItem / ScheduleEvent</text>
+
+        <!-- CLI -->
+        <rect x="40" y="375" width="160" height="44" rx="6" fill="#1f242b" stroke="#2a313c"/>
+        <text x="120" y="402" fill="#9aa3af" font-size="11" font-family="monospace" text-anchor="middle">athena fetch --source X</text>
+
+        <!-- Arrow CLI to worker -->
+        <path d="M 200 397 L 300 397 L 300 96 L 680 96" fill="none" stroke="#9aa3af" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+
+        <!-- Planning Agent -->
+        <rect x="460" y="255" width="180" height="72" rx="8" fill="#1f242b" stroke="#b794f6" stroke-width="2"/>
+        <text x="550" y="282" fill="#b794f6" font-size="14" font-family="system-ui,sans-serif" text-anchor="middle" font-weight="700">Planning Agent</text>
+        <text x="550" y="302" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">read store → reason → plan</text>
+        <text x="550" y="318" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">on demand, not per poll</text>
+
+        <!-- Dashboard -->
+        <rect x="670" y="255" width="170" height="72" rx="8" fill="#1f242b" stroke="#6ea8fe" stroke-width="2"/>
+        <text x="755" y="282" fill="#6ea8fe" font-size="14" font-family="system-ui,sans-serif" text-anchor="middle" font-weight="700">Dashboard</text>
+        <text x="755" y="302" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">tasks · calendar · plan</text>
+        <text x="755" y="318" fill="#9aa3af" font-size="10" font-family="monospace" text-anchor="middle">source health · refresh</text>
+
+        <!-- User -->
+        <rect x="670" y="375" width="170" height="44" rx="6" fill="#1f242b" stroke="#2a313c"/>
+        <text x="755" y="402" fill="#e8eaed" font-size="12" font-family="system-ui,sans-serif" text-anchor="middle">User</text>
+
+        <!-- Arrows storage to agent/dashboard -->
+        <line x1="380" y1="290" x2="458" y2="290" stroke="#6ea8fe" stroke-width="2" marker-end="url(#arrow-blue)"/>
+        <text x="410" y="280" fill="#6ea8fe" font-size="10" font-family="monospace">SELECT</text>
+
+        <line x1="380" y1="320" x2="668" y2="290" stroke="#6ea8fe" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+
+        <!-- Agent to storage (write plan) -->
+        <line x1="550" y1="327" x2="550" y2="370" stroke="#b794f6" stroke-width="1.5"/>
+        <line x1="550" y1="370" x2="380" y2="370" stroke="#b794f6" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
+        <text x="460" y="362" fill="#b794f6" font-size="10" font-family="monospace">INSERT daily_plan</text>
+
+        <!-- Agent to dashboard -->
+        <line x1="640" y1="291" x2="668" y2="291" stroke="#b794f6" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
+
+        <!-- Dashboard to user -->
+        <line x1="755" y1="327" x2="755" y2="373" stroke="#9aa3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- User triggers reprioritize -->
+        <path d="M 670 397 L 640 397 L 640 327" fill="none" stroke="#b794f6" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow-purple)"/>
+        <text x="600" y="390" fill="#b794f6" font-size="10" font-family="monospace">reprioritize</text>
+
+        <!-- Legend -->
+        <rect x="460" y="430" width="380" height="60" rx="6" fill="#181b20" stroke="#2a313c"/>
+        <circle cx="480" cy="452" r="5" fill="#5cb87a"/>
+        <text x="492" y="456" fill="#9aa3af" font-size="10" font-family="system-ui,sans-serif">Deterministic fetch</text>
+        <circle cx="580" cy="452" r="5" fill="#6ea8fe"/>
+        <text x="592" y="456" fill="#9aa3af" font-size="10" font-family="system-ui,sans-serif">Read/write store</text>
+        <circle cx="680" cy="452" r="5" fill="#b794f6"/>
+        <text x="692" y="456" fill="#9aa3af" font-size="10" font-family="system-ui,sans-serif">Agent reasoning</text>
+        <line x1="480" y1="472" x2="510" y2="472" stroke="#9aa3af" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="518" y="476" fill="#9aa3af" font-size="10" font-family="system-ui,sans-serif">Manual / on-demand trigger</text>
+      </svg>
+      <figcaption>Athena system architecture — ingestion, storage, agent, and dashboard as separate layers with a single SQLite store as the integration point.</figcaption>
+    </figure>
+
+    <!-- ── COMPONENTS ── -->
+    <h2 id="components">Components</h2>
+
+    <h3 id="ingestion">Ingestion layer <span class="tag ingest">deterministic</span></h3>
+    <table>
+      <thead><tr><th>Component</th><th>Role</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>source registry</code></td><td>YAML or DB rows per external source</td><td>url, connector, schedule, extract rules, enabled flag</td></tr>
+        <tr><td><code>connectors</code></td><td>Reusable fetch+extract handlers</td><td>Start with <code>api_json</code> + <code>ical</code>; add <code>html_selector</code> only when needed</td></tr>
+        <tr><td><code>scheduler</code></td><td>Triggers polls per source</td><td>APScheduler or system cron; per-source intervals (e.g. calendar 5m, tasks 10m)</td></tr>
+        <tr><td><code>worker</code></td><td>Runs fetch loop</td><td>try/except per source; log to <code>fetch_runs</code>; upsert with content hash</td></tr>
+        <tr><td><code>CLI</code></td><td>Manual runs</td><td><code>athena fetch --source X</code> shares the same code path as scheduled runs</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="storage">Storage layer <span class="tag">sqlite</span></h3>
+    <table>
+      <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>sources</code></td><td>Registry metadata, last_status, schedule</td></tr>
+        <tr><td><code>items</code></td><td>Normalized tasks, events, facts — the agent's input</td></tr>
+        <tr><td><code>fetch_runs</code></td><td>Per-source success/failure audit log</td></tr>
+        <tr><td><code>sync_state</code></td><td>API sync tokens, <code>updated_since</code> cursors</td></tr>
+        <tr><td><code>daily_plans</code></td><td>Agent output: ranked tasks, time blocks</td></tr>
+        <tr><td><code>user_goals</code></td><td>Preferences, priorities, editing feedback</td></tr>
+      </tbody>
+    </table>
+
+    <p>Normalized output contract (from ingestion research), extended for planning:</p>
+    <pre><span class="key">{</span>
+  <span class="key">source_id:</span> <span class="val">"todoist-inbox"</span>,
+  <span class="key">kind:</span>       <span class="val">task_list</span> | <span class="val">schedule</span> | <span class="val">scalar</span> | ...,
+  <span class="key">label:</span>      <span class="val">"Review PR"</span>,
+  <span class="key">value:</span>      <span class="val">{ due, priority, duration, ... }</span>,
+  <span class="key">as_of:</span>      <span class="val">"2026-07-11T12:00:00Z"</span>,
+  <span class="key">meta:</span>       <span class="val">{ external_id, content_hash }</span>
+<span class="key">}</span></pre>
+
+    <h3 id="agent">Agent layer <span class="tag agent">on demand</span></h3>
+    <table>
+      <thead><tr><th>Trigger</th><th>Input</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td>User opens dashboard</td><td>Today's items + last plan</td><td>Render cached plan (instant)</td></tr>
+        <tr><td>User clicks "reprioritize"</td><td>Fresh SELECT from <code>items</code> + <code>user_goals</code></td><td>New <code>daily_plans</code> row</td></tr>
+        <tr><td>Scheduled morning briefing (optional)</td><td>Overdue + today's calendar</td><td>Pre-generated plan before user wakes up</td></tr>
+      </tbody>
+    </table>
+
+    <p>Agent responsibilities: resolve calendar conflicts, weigh priority vs. deadlines, suggest time blocks, explain tradeoffs. <em>Not</em> responsibilities: HTTP requests, JSON parsing, cron scheduling.</p>
+
+    <h3 id="dashboard">Dashboard</h3>
+    <p>Reads SQLite directly for items and plans (fast, no agent latency on every page load). Widgets by <code>kind</code>: task lists, schedule, stat cards. Source health table shows last fetch status. "Reprioritize" button triggers agent asynchronously.</p>
+
+    <!-- ── DATA FLOW ── -->
+    <h2 id="flow">Data flow</h2>
+
+    <div class="pipeline">
+      <div class="pipe-box ingest">
+        <div class="label">Poll cycle (every few minutes)</div>
+        <code>scheduler → worker → connector.fetch(source) → connector.extract(raw) → store.upsert(items)</code>
+      </div>
+      <div class="pipe-arrow">▼</div>
+      <div class="pipe-box store">
+        <div class="label">Store</div>
+        <code>items table updated · fetch_runs logged · sync_state advanced</code>
+      </div>
+      <div class="pipe-arrow">▼</div>
+      <div class="pipe-box agent">
+        <div class="label">Planning (on demand)</div>
+        <code>agent.read(today_items, goals) → LLM reason → store.insert(daily_plan) → dashboard.render()</code>
+      </div>
+    </div>
+
+    <h3>Example source configs</h3>
+    <pre><span class="comment"># Google Calendar</span>
+<span class="key">id:</span> gcal-today  <span class="key">kind:</span> <span class="val">schedule</span>  <span class="key">connector:</span> <span class="val">api_json</span>
+<span class="key">schedule:</span> <span class="val">"*/5 * * * *"</span>
+
+<span class="comment"># Todoist tasks</span>
+<span class="key">id:</span> todoist-inbox  <span class="key">kind:</span> <span class="val">task_list</span>  <span class="key">connector:</span> <span class="val">api_json</span>
+<span class="key">schedule:</span> <span class="val">"*/5 * * * *"</span>
+
+<span class="comment"># Worker pseudocode</span>
+<span class="key">for</span> source <span class="key">in</span> registry.enabled():
+    <span class="key">if</span> source.is_due():
+        <span class="key">try:</span>
+            raw = connectors[source.connector].fetch(source)
+            items = connectors[source.connector].extract(raw, source)
+            store.upsert(items)
+        <span class="key">except</span> Exception <span class="key">as</span> e:
+            store.log_failure(source.id, e)</pre>
+
+    <!-- ── COMPARISON ── -->
+    <h2 id="compare">Agent-driven fetch vs. deterministic pipeline</h2>
+
+    <div class="procon">
+      <div class="procon minus">
+        <h4>− Agent-driven ingestion</h4>
+        <ul>
+          <li>Unpredictable latency per poll</li>
+          <li>Token cost on every refresh</li>
+          <li>Hard to test and replay</li>
+          <li>Opaque failure modes</li>
+          <li>Re-fetches on every agent turn</li>
+        </ul>
+      </div>
+      <div class="procon plus">
+        <h4>+ Deterministic pipeline</h4>
+        <ul>
+          <li>Sub-second per API call</li>
+          <li>Free after setup (no LLM in loop)</li>
+          <li>Same input → same output</li>
+          <li>Clear per-source logs</li>
+          <li>Agent reads cache, not live APIs</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── STACK ── -->
+    <h2 id="stack">Recommended stack (2–3 sources)</h2>
+    <table>
+      <thead><tr><th>Concern</th><th>Choice</th><th>Defer until</th></tr></thead>
+      <tbody>
+        <tr><td>Language</td><td>Python worker</td><td>—</td></tr>
+        <tr><td>Storage</td><td>SQLite</td><td>Multi-user → Postgres</td></tr>
+        <tr><td>Scheduling</td><td>APScheduler or cron</td><td>~50 sources → Celery/Temporal</td></tr>
+        <tr><td>Connectors</td><td><code>api_json</code>, <code>ical</code></td><td>JS SPAs → Playwright</td></tr>
+        <tr><td>Config</td><td>YAML source files</td><td>Phase 2 → web onboarding form</td></tr>
+        <tr><td>Dashboard</td><td>Next.js or simple web UI</td><td>—</td></tr>
+        <tr><td>Agent</td><td>LLM via API (planning only)</td><td>Phase 2 — after ingestion works</td></tr>
+        <tr><td>LLM extraction</td><td>Not in v1</td><td>Irregular layouts only</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Polling best practices</h3>
+    <ul class="rec-list">
+      <li>Use <code>updated_since</code> / sync tokens where APIs support them — pull deltas, not full lists.</li>
+      <li>Store <code>content_hash</code> or <code>external_updated_at</code> to skip no-op writes.</li>
+      <li>Per-source intervals: not everything needs the same cadence.</li>
+      <li>Webhooks (Todoist, Linear) can replace polling later; start with polling for simplicity.</li>
+    </ul>
+
+    <!-- ── PHASES ── -->
+    <h2 id="phases">Build phases</h2>
+    <table class="phases">
+      <thead><tr><th>Phase</th><th>Scope</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1 — Ingestion</td>
+          <td>SQLite schema, <code>api_json</code> + <code>ical</code> connectors, scheduler, CLI, 2 real sources</td>
+          <td>DB shows today's tasks and events updating reliably</td>
+        </tr>
+        <tr>
+          <td>2 — Agent</td>
+          <td>Planning agent reads <code>items</code>, writes <code>daily_plans</code>; user can reprioritize</td>
+          <td>Ranked daily plan with explanations</td>
+        </tr>
+        <tr>
+          <td>3 — Dashboard</td>
+          <td>Widgets by kind, source health, plan view, manual refresh</td>
+          <td>Usable daily planning UI</td>
+        </tr>
+        <tr>
+          <td>4 — Onboard</td>
+          <td>Paste URL / pick API / YAML editor for new sources</td>
+          <td>Add sources without code changes</td>
+        </tr>
+        <tr>
+          <td>5 — Scale</td>
+          <td>Playwright fallback, webhooks, Postgres, notifications</td>
+          <td>50+ sources, production hardening</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ── NEXT STEPS ── -->
+    <h2 id="next">Next steps</h2>
+    <ol class="rec-list">
+      <li><strong>Pick 2–3 real sources</strong> you actually use (calendar + task manager is the usual starting pair).</li>
+      <li><strong>Write <code>spec.md</code></strong> scoped to the planning dashboard, building on <code>ingestion-research.md</code>.</li>
+      <li><strong>Implement Phase 1 only</strong> — no agent until ingestion is trustworthy.</li>
+      <li><strong>Validate the store</strong> — open SQLite and confirm items update on schedule before adding LLM reasoning.</li>
+    </ol>
+
+    <ul class="questions">
+      <li><strong>Sources?</strong> Google Calendar, Todoist, Linear, Notion — TBD.</li>
+      <li><strong>Agent model?</strong> Which LLM and how much context per planning run.</li>
+      <li><strong>Hosting?</strong> Local Mac cron vs. always-on server — affects scheduler setup.</li>
+    </ul>
+
+    <p style="margin-top:2.5rem;font-size:0.8rem;color:var(--muted)">
+      Source: architecture conversation (2026-07-10 – 2026-07-11) ·
+      Companion docs: <code>.cursor/ingestion-research.html</code>, <code>.cursor/ingestion-research.md</code>
+    </p>
+  </main>
+</div>
+</body>
+</html>
