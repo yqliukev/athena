@@ -2,7 +2,7 @@
 
 | Source | Retrieval Method |
 |--------|------------------|
-| Weather | Standard API |
+| Weather | JSON API |
 | Stock Portfolio | ? |
 | Esports schedule Calendar | ? |
 | News | RSS Feed |
